@@ -160,9 +160,6 @@ export default function Home() {
       return new Promise((resolve, reject) => {
         if ((img as HTMLImageElement).complete) {
           resolve(null);
-        } else {
-          img.onload = resolve;
-          img.onerror = reject;
         }
       });
     });
@@ -336,9 +333,105 @@ export default function Home() {
           </div>
         </div>
       </div>
-      
+
       <section className="section-anchor" id="socials">
-        <img src="/images/snow.png" />
+        <div style={{ position: 'relative' }}>
+          <img src="/images/snow.png" style={{ width: '100%' }} />
+          
+          <div id="copyNotify" style={{
+            position: 'fixed',
+            top: '-50px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#4CAF50',
+            color: 'white',
+            padding: '10px 20px',
+            borderRadius: '6px',
+            transition: 'top 0.3s',
+            zIndex: 9999,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          }}>
+            ✓ Текст скопирован
+          </div>
+
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            display: 'flex',
+            gap: '20px',
+            alignItems: 'center'
+          }}>
+            <button
+              style={{
+                background: 'rgba(255,255,255,0.85)',
+                border: '2px solid #c5a47e',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                color: '#000',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText('Текст для копирования');
+                  const notif = document.getElementById('copyNotify');
+                  if (notif) {
+                    notif.style.top = '20px';
+                    setTimeout(() => notif.style.top = '-50px', 1500);
+                  }
+                } catch {}
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <i className="fas fa-copy"></i>
+              Копировать {<img src='/images/dexscreener.png' style={{width: '28px', height: '28px'}}></img>}
+            </button>
+
+            <a 
+              href="/"
+              style={{
+                background: 'rgba(197,164,126,0.85)',
+                border: '2px solid #c5a47e',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                textDecoration: 'none',
+                color: '#000',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <i className="fas fa-external-link-alt"></i>
+              перейт на сайт {<img src='/images/xcom.png' style={{width: '28px', height: '28px'}}></img>}
+            </a>
+          </div>
+        </div>
       </section>
     </>
   );

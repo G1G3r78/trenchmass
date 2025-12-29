@@ -189,61 +189,7 @@ body {
 }
 
 /* Контейнер для изображения орнамента */
-.ornament-image-container {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    overflow: hidden;
-    position: relative;
-}
 
-/* Контейнер для кнопок управления ВНУТРИ орнамента */
-.ornament-controls-container {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    z-index: 1001;
-}
-
-.ornament-controls-container .btn-control {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(20, 20, 24, 0.9);
-    border: 1px solid #c5a47e;
-    color: #c5a47e;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: 'Rosarivo', serif;
-}
-
-.ornament-controls-container .btn-control:hover {
-    transform: scale(1.1);
-}
-
-.ornament-controls-container .btn-control.btn-save:hover {
-    background: rgba(46, 125, 50, 0.9);
-    border-color: #4CAF50;
-    color: white;
-}
-
-.ornament-controls-container .btn-control.btn-delete:hover {
-    background: rgba(211, 47, 47, 0.9);
-    border-color: #f44336;
-    color: white;
-}
-
-.ornament-controls-container .btn-control i {
-    font-size: 12px;
-}
 
 /* Скрываем кнопки в плавающей панели при редактировании */
 .ornament-controls {
@@ -314,6 +260,7 @@ body {
         font-size: 12px;
         top: 5px;
         right: 5px;
+        display: none;
     }
 }
 
@@ -440,18 +387,17 @@ body {
 .community-workspace {
     width: 100%;
     max-width: 1200px;
-    margin: 40px auto;
     position: relative;
+    margin: auto;
 }
 
 .community-tree {
     width: 100%;
-    min-height: 800px;
     border-radius: 12px;
-    background-position: center top;
+    background-position: center bottom;
     background-repeat: no-repeat;
     background-size: contain;
-    position: relative;
+    position: absolute;
     overflow: visible;
     aspect-ratio: 1.5/1.8;
 }
@@ -652,69 +598,65 @@ body {
 
 .ornament-controls-container {
     position: absolute;
-    left: 130px;
-    top: 0;
     display: flex;
     flex-direction: column;
     gap: 5px;
     z-index: 1001;
-    background: rgba(20, 20, 24, 0.9);
-    border: 1px solid #c5a47e;
-    border-radius: 6px;
-    padding: 8px;
-    min-width: 100px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transform: none !important;
+    pointer-events: auto; /* Разрешаем взаимодействие */
+}
+.ornament-controls-container:not([data-ornament-id]) {
+    display: none;
 }
 
-.ornament-controls-container .btn-control {
-    padding: 8px 12px;
-    font-size: 12px;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 1px solid #c5a47e;
-    color: #c5a47e;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: 'Rosarivo', serif;
-    gap: 5px;
+/* Стили для кнопок управления на орнаменте */
+.ornament .btn-control {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 24, 0.9);
+  border: 1px solid #c5a47e;
+  color: #c5a47e;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Rosarivo', serif;
+  pointer-events: auto;
 }
 
-.ornament-controls-container .btn-control:hover {
-    transform: translateY(-1px);
+.ornament .btn-control:hover {
+  transform: translateY(-1px);
 }
 
-.ornament-controls-container .btn-control.btn-save:hover {
-    background: rgba(46, 125, 50, 0.2);
-    border-color: #4CAF50;
-    color: #4CAF50;
+.ornament .btn-control.btn-save:hover {
+  background: rgba(46, 125, 50, 0.2);
+  border-color: #4CAF50;
+  color: #4CAF50;
 }
 
-.ornament-controls-container .btn-control.btn-delete:hover {
-    background: rgba(211, 47, 47, 0.2);
-    border-color: #f44336;
-    color: #f44336;
+.ornament .btn-control.btn-delete:hover {
+  background: rgba(211, 47, 47, 0.2);
+  border-color: #f44336;
+  color: #f44336;
 }
 
-.ornament-controls-container .btn-control i {
-    font-size: 12px;
+.ornament .btn-control i {
+  font-size: 12px;
 }
 
 /* Стили для орнамента */
 .ornament {
     position: absolute;
-    width: 100px;
-    height: 100px;
     cursor: move;
     z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: center;
     aspect-ratio: 1/1;
-    transition: box-shadow 0.12s ease;
 }
 
 .ornament img { 
@@ -741,25 +683,9 @@ body {
     pointer-events: none; 
     opacity: 0.95; 
     box-shadow: 0 0 0 2px rgba(197,164,126,0.12) inset;
+    /*border: 20px solid transparent; border-top: 20px solid green; */
     position: relative;
-}
-
-.ornament.fixed::after {
-    content: '✓';
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: #c5a47e;
-    color: white;
-    width: 20px;
-    height: 20px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: bold;
-    z-index: 100;
 }
 
 /* Для крестика на шарике */
@@ -888,7 +814,7 @@ body {
     }
     
     .action-buttons {
-        width: 320px;
+        width: 32px;
     }
     
     .pagetwo {
@@ -914,6 +840,7 @@ body {
         font-size: 12px;
         top: 4px;
         right: 4px;
+        display: none;
     }
     
     .floating-panel {

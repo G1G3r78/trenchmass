@@ -14,7 +14,7 @@ declare global {
 
 // Конфигурация
 const MAX_ORNAMENTS_PER_USER = 5;
-const CLEANUP_MINUTES = 30;
+const CLEANUP_MINUTES = 10;
 const UPDATE_INTERVAL = 5000; // 5 секунд
 
 // Функция для сжатия изображения если оно больше 768KB
@@ -128,7 +128,7 @@ export default function TreePage() {
     if (typeof window !== 'undefined') {
       const user = generateUserId();
       setUserId(user);
-      initCommunityTree();
+      //initCommunityTree();
       fetchOrnaments();
     }
   }, []);
@@ -148,10 +148,10 @@ export default function TreePage() {
     moveable.on("drag", (e: any) => {
       if (e.target && e.target.classList.contains('editing')) {
         e.target.style.transform = e.transform;
-        const controlsContainer = e.target.querySelector('.ornament-controls-container');
+        /*const controlsContainer = e.target.querySelector('.ornament-controls-container');
         if (controlsContainer) {
           controlsContainer.style.transform = e.transform;
-        }
+        }*/
       }
     });
 
@@ -160,14 +160,14 @@ export default function TreePage() {
         e.target.style.width = `${e.width}px`;
         e.target.style.height = `${e.height}px`;
         e.target.style.transform = e.transform;
-        const controlsContainer = e.target.querySelector('.ornament-controls-container');
+        /*const controlsContainer = e.target.querySelector('.ornament-controls-container');
         if (controlsContainer) {
           controlsContainer.style.transform = e.transform;
-        }
+        }*/
       }
     });
 
-    moveable.on("rotate", (e: any) => {
+    /*moveable.on("rotate", (e: any) => {
       if (e.target && e.target.classList.contains('editing')) {
         e.target.style.transform = e.transform;
         const controlsContainer = e.target.querySelector('.ornament-controls-container');
@@ -175,7 +175,7 @@ export default function TreePage() {
           controlsContainer.style.transform = e.transform;
         }
       }
-    });
+    });*/
 
     setMoveableInstance(moveable);
   };
@@ -369,20 +369,29 @@ export default function TreePage() {
     }, 100);
   };
 
-  const cancelOrnamentPlacement = () => {
+const cancelOrnamentPlacement = () => {
     setIsPlacingOrnament(false);
+    
+    // Удаляем элементы управления Moveable
+    const moveableElements = document.querySelectorAll('.moveable-control, .moveable-line, .moveable-rotation');
+    moveableElements.forEach(el => el.remove());
+    
     if (placementMessageRef.current && panelInstructionRef.current && communityTreeRef.current) {
-      placementMessageRef.current.style.display = 'none';
-      panelInstructionRef.current.style.display = 'block';
-      communityTreeRef.current.style.cursor = 'default';
-      
-      if (currentCustomOrnament) {
-        currentCustomOrnament.remove();
-        setCurrentCustomOrnament(null);
-        if (moveableInstance) moveableInstance.target = null;
-      }
+        placementMessageRef.current.style.display = 'none';
+        panelInstructionRef.current.style.display = 'block';
+        communityTreeRef.current.style.cursor = 'default';
+        
+        if (currentCustomOrnament) {
+            currentCustomOrnament.remove();
+            setCurrentCustomOrnament(null);
+            if (moveableInstance) {
+                moveableInstance.target = null;
+                moveableInstance.destroy();
+                setMoveableInstance(null);
+            }
+        }
     }
-  };
+};
 
   const handleTreeClick = (e: React.MouseEvent) => {
     if (!isPlacingOrnament || !currentCustomImageSrc || !communityTreeRef.current) return;
@@ -402,74 +411,136 @@ export default function TreePage() {
     }
   };
 
-  const createCustomOrnament = (x: number, y: number) => {
-    if (!communityTreeRef.current || !moveableInstance) return;
-    
-    if (currentCustomOrnament) {
-      currentCustomOrnament.remove();
-    }
-    
-    const ornament = document.createElement('div');
-    ornament.className = 'ornament custom-ball editing';
-    ornament.setAttribute('data-timestamp', Date.now().toString());
-    
-    const imgContainer = document.createElement('div');
-    imgContainer.className = 'ornament-image-container';
-    
-    const img = document.createElement('img');
-    img.src = currentCustomImageSrc!;
-    img.crossOrigin = 'anonymous';
-    img.style.width = '100%';
-    img.style.height = '100%';
-    img.style.borderRadius = '50%';
-    img.style.objectFit = 'cover';
-    
-    imgContainer.appendChild(img);
-    
-    const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'ornament-controls-container';
-    
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'btn-control btn-save';
-    saveBtn.innerHTML = '<i class="fas fa-check"></i>';
-    saveBtn.title = 'Save ornament';
-    saveBtn.onclick = (e) => {
-      e.stopPropagation();
-      saveOrnament(ornament);
-    };
-    
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn-control btn-delete';
-    deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
-    deleteBtn.title = 'Delete ornament';
-    deleteBtn.onclick = (e) => {
-      e.stopPropagation();
-      deleteOrnament(ornament);
-    };
-    
-    controlsContainer.appendChild(saveBtn);
-    controlsContainer.appendChild(deleteBtn);
-    ornament.appendChild(imgContainer);
-    ornament.appendChild(controlsContainer);
-    
-    ornament.style.position = 'absolute';
-    ornament.style.left = `${x - 60}px`;
-    ornament.style.top = `${y - 60}px`;
-    ornament.style.width = '120px';
-    ornament.style.height = '120px';
-    
-    communityTreeRef.current.appendChild(ornament);
-    setCurrentCustomOrnament(ornament);
-    
-    ornament.onmousedown = (e) => {
-      e.stopPropagation();
-      moveableInstance.target = ornament;
-    };
-    
-    setTimeout(() => {
-      moveableInstance.target = ornament;
-    }, 10);
+const createCustomOrnament = (x: number, y: number) => {
+  if (!communityTreeRef.current || !window.Moveable) return;
+  
+  // Уничтожаем предыдущий Moveable если есть
+  const oldMoveableElements = document.querySelectorAll('.moveable-control, .moveable-line, .moveable-rotation');
+  oldMoveableElements.forEach(el => el.remove());
+  
+  // Уничтожаем предыдущий Moveable если есть
+  if (moveableInstance) {
+    moveableInstance.destroy();
+  }
+  
+  // Создаем орнамент
+  const ornament = document.createElement('div');
+  ornament.className = 'ornament editing';
+  const ornamentId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  ornament.setAttribute('data-ornament-id', ornamentId);
+  
+  const imgContainer = document.createElement('div');
+  imgContainer.className = 'ornament-image-container';
+  
+  const img = document.createElement('img');
+  img.src = currentCustomImageSrc!;
+  img.crossOrigin = 'anonymous';
+  img.style.width = '100%';
+  img.style.height = '100%';
+  img.style.borderRadius = '50%';
+  img.style.objectFit = 'cover';
+  
+  imgContainer.appendChild(img);
+  ornament.appendChild(imgContainer);
+  
+  ornament.style.position = 'absolute';
+  ornament.style.left = `${x - 60}px`;
+  ornament.style.top = `${y - 60}px`;
+  ornament.style.width = '120px';
+  ornament.style.height = '120px';
+  ornament.style.border = '2px dashed #c5a47e';
+  ornament.style.borderRadius = '50%';
+  
+  communityTreeRef.current.appendChild(ornament);
+  setCurrentCustomOrnament(ornament);
+  
+  // Создаем контейнер для кнопок управления ВНУТРИ орнамента
+  const controlsContainer = document.createElement('div');
+  controlsContainer.className = 'ornament-controls-container';
+  controlsContainer.setAttribute('data-ornament-id', ornamentId);
+  
+  // Кнопка сохранения - левый верхний угол
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn-control btn-save';
+  saveBtn.innerHTML = '<i class="fas fa-check">✓</i>';
+  saveBtn.title = 'Save ornament';
+  saveBtn.onclick = (e) => {
+    e.stopPropagation();
+    saveOrnament(ornament);
   };
+  saveBtn.style.position = 'absolute';
+  saveBtn.style.top = '-14px';
+  saveBtn.style.left = '110%';
+  saveBtn.style.zIndex = '1001';
+  
+  // Кнопка удаления - правый верхний угол (заменяем на левый верхний, но расположим рядом с кнопкой сохранения)
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn-control btn-delete';
+  deleteBtn.innerHTML = '<i class="fas fa-times">×</i>';
+  deleteBtn.title = 'Delete ornament';
+  deleteBtn.onclick = (e) => {
+    e.stopPropagation();
+    deleteOrnament(ornament);
+  };
+  deleteBtn.style.position = 'absolute';
+  deleteBtn.style.top = '-14px';
+  deleteBtn.style.left = '-30%'; // Сдвигаем вправо от кнопки сохранения
+  deleteBtn.style.zIndex = '1001';
+  
+  // Добавляем кнопки напрямую в контейнер орнамента
+  ornament.appendChild(saveBtn);
+  ornament.appendChild(deleteBtn);
+  
+  // Функция для обновления позиции кнопок (будет вызываться при трансформациях)
+  const updateControlsPosition = () => {
+    // Кнопки уже абсолютно позиционированы относительно орнамента
+    // и будут двигаться вместе с ним автоматически
+  };
+  
+  // Создаем Moveable
+  const moveable = new window.Moveable(communityTreeRef.current, {
+    target: ornament,
+    draggable: true,
+    resizable: true,
+    rotatable: true,
+    keepRatio: true,
+    renderDirections: ["nw", "ne", "sw", "se"],
+  });
+
+  // Обработчики событий Moveable
+  const handleDrag = (e: any) => {
+    if (e.target === ornament) {
+      e.target.style.transform = e.transform;
+    }
+  };
+
+  const handleResize = (e: any) => {
+    if (e.target === ornament) {
+      e.target.style.width = `${e.width}px`;
+      e.target.style.height = `${e.height}px`;
+      e.target.style.transform = e.transform;
+    }
+  };
+
+  const handleRotate = (e: any) => {
+    if (e.target === ornament) {
+      e.target.style.transform = e.transform;
+    }
+  };
+
+  moveable.on("drag", handleDrag);
+  moveable.on("resize", handleResize);
+  moveable.on("rotate", handleRotate);
+  
+  // Сохраняем экземпляр
+  setMoveableInstance(moveable);
+  
+  // Обработчик клика на орнамент для активации Moveable
+  ornament.onmousedown = (e) => {
+    e.stopPropagation();
+    moveable.target = ornament;
+  };
+};
 
   // Функция для дополнительного сжатия base64 изображений
   const compressImageToBase64 = async (base64Image: string, maxWidth: number): Promise<string> => {
@@ -506,19 +577,29 @@ export default function TreePage() {
   };
 
   // Сохранение орнамента на сервер
-  const saveOrnament = async (ornament: HTMLElement) => {
-    if (!ornament || !panelInstructionRef.current || !userId) return;
+// Сохранение орнамента на сервер
+const saveOrnament = async (ornament: HTMLElement) => {
+    if (!ornament || !userId || !communityTreeRef.current) return;
+    
+    // ПРОВЕРКА ЛИМИТА
+    if (userOrnamentCount >= MAX_ORNAMENTS_PER_USER) {
+        showErrorMessage(`You already have ${MAX_ORNAMENTS_PER_USER} ornaments. Remove some before adding new ones.`);
+        return;
+    }
     
     setIsLoading(true);
     setError(null);
     
-    const controlsContainer = ornament.querySelector('.ornament-controls-container');
+    // Удаляем controlsContainer
+    const ornamentId = ornament.getAttribute('data-ornament-id');
+    const controlsContainer = communityTreeRef.current.querySelector(`.ornament-controls-container[data-ornament-id="${ornamentId}"]`);
     if (controlsContainer) {
-      controlsContainer.remove();
+        controlsContainer.remove();
     }
     
+    // Убираем границы и класс editing
     ornament.classList.remove('editing');
-    ornament.classList.add('fixed');
+    ornament.style.border = 'none';
     ornament.style.cursor = 'default';
     ornament.onmousedown = null;
     
@@ -526,101 +607,140 @@ export default function TreePage() {
     if (!imgSrc) return;
     
     try {
-      let imageUrl = imgSrc;
-      
-      // Проверяем длину base64 (ограничение Google Sheets ~50k символов на ячейку)
-      if (imgSrc.length > 40000) {
-        const compressed = await compressImageToBase64(imgSrc, 300);
-        imageUrl = compressed;
-      }
-      
-      const ornamentData = {
-        action: 'saveOrnament',
-        userId: userId,
-        src: imageUrl,
-        x: ornament.style.left,
-        y: ornament.style.top,
-        width: ornament.style.width,
-        height: ornament.style.height,
-        transform: ornament.style.transform || '',
-        timestamp: Date.now(),
-        storageType: 'base64'
-      };
-      
-      const response = await fetch('/api/ornaments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ornamentData),
-      });
-      
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      ornament.remove();
-      setCurrentCustomOrnament(null);
-      if (moveableInstance) moveableInstance.target = null;
-      
-      // Обновляем данные
-      await fetchOrnaments();
-      
-      showSuccessMessage(`✓ Ornament saved! You have ${data.userCount || (userOrnamentCount + 1)}/${MAX_ORNAMENTS_PER_USER} ornaments`);
-      
-    } catch (error: any) {
-      console.error('Error saving ornament:', error);
-      
-      let errorMessage = error.message || 'Failed to save ornament';
-      if (error.message.includes('Maximum')) {
-        errorMessage = error.message;
-      }
-      
-      showErrorMessage(errorMessage);
-      setError(errorMessage);
-      
-      if (controlsContainer && ornament.parentNode) {
-        ornament.appendChild(controlsContainer);
-        ornament.classList.add('editing');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Удаление орнамента
-  const deleteOrnament = async (ornament: HTMLElement) => {
-    if (!ornament || !panelInstructionRef.current || !placementMessageRef.current) return;
-    
-    try {
-      // Отправляем запрос на удаление на сервер
-      const ornamentId = ornament.getAttribute('data-ornament-id');
-      if (ornamentId) {
-        const response = await fetch(`/api/ornaments?ornamentId=${encodeURIComponent(ornamentId)}`, {
-          method: 'DELETE',
+        let imageUrl = imgSrc;
+        
+        if (imgSrc.length > 40000) {
+            const compressed = await compressImageToBase64(imgSrc, 300);
+            imageUrl = compressed;
+        }
+        
+        const ornamentData = {
+            action: 'saveOrnament',
+            userId: userId,
+            src: imageUrl,
+            x: ornament.style.left,
+            y: ornament.style.top,
+            width: ornament.style.width,
+            height: ornament.style.height,
+            transform: ornament.style.transform || '',
+            timestamp: Date.now(),
+            storageType: 'base64'
+        };
+        
+        const response = await fetch('/api/ornaments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ornamentData),
         });
         
-        if (!response.ok) {
-          throw new Error('Failed to delete ornament from server');
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
         }
-      }
-      
-      ornament.remove();
-      setCurrentCustomOrnament(null);
-      if (moveableInstance) moveableInstance.target = null;
-      
-      // Обновляем список орнаментов
-      await fetchOrnaments();
-      
-      showSuccessMessage('Ornament deleted');
-    } catch (error) {
-      console.error('Error deleting ornament:', error);
-      showErrorMessage('Failed to delete ornament');
+        
+        // УДАЛЯЕМ ВСЕ ЭЛЕМЕНТЫ MOVEABLE
+        const moveableElements = document.querySelectorAll('.moveable-control, .moveable-line, .moveable-rotation, .moveable-control-box');
+        moveableElements.forEach(el => el.remove());
+        
+        // Уничтожаем Moveable
+        /*if (moveableInstance) {
+            moveableInstance.destroy();
+            setMoveableInstance(null);
+        }*/
+        
+        // Удаляем орнамент
+        ornament.remove();
+        setCurrentCustomOrnament(null);
+        
+        // Обновляем данные
+        await fetchOrnaments();
+        
+        showSuccessMessage(`✓ Ornament saved! You have ${data.userCount || (userOrnamentCount + 1)}/${MAX_ORNAMENTS_PER_USER} ornaments`);
+        
+    } catch (error: any) {
+        console.error('Error saving ornament:', error);
+        
+        let errorMessage = error.message || 'Failed to save ornament';
+        if (error.message.includes('Maximum')) {
+            errorMessage = error.message;
+        }
+        
+        showErrorMessage(errorMessage);
+        setError(errorMessage);
+        
+        // Восстанавливаем controlsContainer если ошибка
+        if (controlsContainer && communityTreeRef.current) {
+            communityTreeRef.current.appendChild(controlsContainer);
+            ornament.classList.add('editing');
+            ornament.style.border = '2px dashed #c5a47e';
+        }
+    } finally {
+        setIsLoading(false);
     }
+};
+
+  // Удаление орнамента
+const deleteOrnament = async (ornament: HTMLElement) => {
+    if (!ornament || !communityTreeRef.current) return;
     
-    panelInstructionRef.current.style.display = 'block';
-    placementMessageRef.current.style.display = 'none';
-  };
+    try {
+        const ornamentId = ornament.getAttribute('data-ornament-id');
+        
+        // Если это сохраненный орнамент, удаляем с сервера
+        if (ornamentId && !ornamentId.startsWith('local_')) {
+            const response = await fetch(`/api/ornaments?ornamentId=${encodeURIComponent(ornamentId)}`, {
+                method: 'DELETE',
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete ornament from server');
+            }
+        }
+        
+        // Удаляем controlsContainer
+        if (ornamentId) {
+            const controlsContainer = communityTreeRef.current.querySelector(`.ornament-controls-container[data-ornament-id="${ornamentId}"]`);
+            if (controlsContainer) {
+                controlsContainer.remove();
+            }
+        }
+        
+        // Уничтожаем Moveable если это редактируемый орнамент
+        if (ornament.classList.contains('editing')) {
+            try {
+                // Удаляем все элементы управления Moveable из DOM
+                const moveableElements = document.querySelectorAll('.moveable-control, .moveable-line, .moveable-rotation');
+                moveableElements.forEach(el => el.remove());
+                
+                // Безопасное уничтожение Moveable
+                if (moveableInstance && typeof moveableInstance.destroy === 'function') {
+                    // Проверяем, что moveableInstance все еще валиден
+                    if (moveableInstance.target === ornament) {
+                        moveableInstance.target = null;
+                    }
+                    moveableInstance.destroy();
+                }
+            } catch (error) {
+                console.warn('Error destroying moveable instance:', error);
+            } finally {
+                setMoveableInstance(null);
+            }
+        }
+        
+        // Удаляем орнамент
+        ornament.remove();
+        setCurrentCustomOrnament(null);
+        
+        // Обновляем список орнаментов
+        await fetchOrnaments();
+        
+        showSuccessMessage('Ornament deleted');
+    } catch (error) {
+        console.error('Error deleting ornament:', error);
+        showErrorMessage('Failed to delete ornament');
+    }
+};
 
   const showSuccessMessage = (message: string) => {
     if (!panelInstructionRef.current) return;
@@ -656,41 +776,10 @@ export default function TreePage() {
   };
 
   // Ручное обновление орнаментов
-  const handleManualRefresh = async () => {
+  /*const handleManualRefresh = async () => {
     await fetchOrnaments();
     showSuccessMessage('✓ Ornaments updated');
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (floatingPanelRef.current && 
-          openPanelBtnRef.current &&
-          !floatingPanelRef.current.contains(e.target as Node) &&
-          !openPanelBtnRef.current.contains(e.target as Node) &&
-          floatingPanelRef.current.classList.contains('active')) {
-        closeFloatingPanel();
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === "Delete" || e.key === "Backspace") && moveableInstance?.target) {
-        const target = moveableInstance.target;
-        if (target.classList.contains('editing')) {
-          if (confirm('Delete this ornament?')) {
-            deleteOrnament(target);
-          }
-        }
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    window.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [moveableInstance]);
+  };*/
 
   return (
     <>
@@ -803,10 +892,10 @@ export default function TreePage() {
         </div>
       </div>
 
-      <button className="open-panel-btn" id="openPanelBtn" ref={openPanelBtnRef} onClick={openFloatingPanel}>
+      {/*<button className="open-panel-btn" id="openPanelBtn" ref={openPanelBtnRef} onClick={openFloatingPanel}>
         <i className="fas fa-plus"></i>
         <span>Add to Tree</span>
-      </button>
+      </button>*/}
 
       <main style={{ padding: '80px 20px', color: '#fafafa', fontFamily: "'Rosarivo', serif" }}>
         <h1 className="header2 center">Community tree</h1>
@@ -825,7 +914,7 @@ export default function TreePage() {
           margin: '0 auto 30px',
           position: 'relative'
         }}>
-          <button 
+          {/*<button 
             onClick={handleManualRefresh}
             style={{
               position: 'absolute',
@@ -847,7 +936,7 @@ export default function TreePage() {
           >
             <i className={`fas fa-sync ${isUpdating ? 'fa-spin' : ''}`}></i>
             Refresh
-          </button>
+          </button>*/}
           
           <p style={{margin: '5px 0', fontSize: '14px'}}>
             <i className="fas fa-user" style={{marginRight: '8px'}}></i>
@@ -897,7 +986,7 @@ export default function TreePage() {
             id="communityTree" 
             className="community-tree" 
             ref={communityTreeRef}
-            style={{ backgroundImage: "url('/images/image 3.png')" }}
+            style={{ backgroundImage: "url('/images/Group 152.png')" }}
             onClick={handleTreeClick}
           >
             {isLoading && (
@@ -906,11 +995,24 @@ export default function TreePage() {
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                color: '#c5a47e',
+                color: '4px soldi #c5a47e',
                 textAlign: 'center'
               }}>
+                <div className='background-spinner' style={{
+                  backgroundColor: 'rgba(32, 29, 36, 0.9)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  width: '200px',
+                  height: '120px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  border: '5px solid #c5a47e',
+                  borderWidth: '1px',
+                  borderRadius: '20px'
+                   }}>
                 <div className="loading-spinner" style={{margin: '0 auto 10px'}}></div>
                 <p>Loading ornaments...</p>
+              </div>
               </div>
             )}
             
