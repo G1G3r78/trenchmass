@@ -1,3 +1,5 @@
+// ни conveх, ни imgbb не работают в россии, сайт без впна не открывается, я в ахуе
+// картинки сохраняются в base64 на google sheets, "гениально" просто
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
@@ -15,7 +17,7 @@ declare global {
 // Конфигурация
 const MAX_ORNAMENTS_PER_USER = 5;
 const CLEANUP_MINUTES = 10;
-const UPDATE_INTERVAL = 5000; // 5 секунд
+const UPDATE_INTERVAL = 2000; // 2 секунд
 
 // Функция для сжатия изображения если оно больше 768KB
 const compressImageIfNeeded = async (file: File): Promise<string> => {
@@ -64,18 +66,6 @@ const compressImageIfNeeded = async (file: File): Promise<string> => {
   }
 };
 
-// Генерация уникального ID пользователя
-const generateUserId = (): string => {
-  if (typeof window === 'undefined') return 'anonymous';
-  
-  let userId = localStorage.getItem('communityTreeUserId');
-  if (!userId) {
-    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('communityTreeUserId', userId);
-  }
-  return userId;
-};
-
 // Вспомогательная функция для удаления дубликатов орнаментов
 const removeDuplicateOrnaments = (ornaments: any[]): any[] => {
   const seen = new Set();
@@ -111,27 +101,61 @@ export default function TreePage() {
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const userOrnamentCountRef = useRef(0);
+  const userIdRef = useRef(''); // Добавляем ref для userId
+
+  // Инициализация пользователя
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const user = generateUserId();
+      //console.log('Generated userId:', user);
+      setUserId(user);
+      userIdRef.current = user; // Сохраняем в ref
+      
+      // Загружаем счетчик из localStorage
+      const storedCount = localStorage.getItem(`userOrnamentCount_${user}`);
+      if (storedCount) {
+        const count = parseInt(storedCount, 10);
+        setUserOrnamentCount(count);
+        userOrnamentCountRef.current = count;
+      }
+      
+      fetchOrnaments();
+    }
+  }, []);
+
+  // Обновляем ref при изменении счетчика
+  useEffect(() => {
+    userOrnamentCountRef.current = userOrnamentCount;
+    //console.log('Ref updated:', userOrnamentCount);
+  }, [userOrnamentCount]);
+
   // Интервал для автоматического обновления
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const intervalId = setInterval(() => {
-      if (!isUpdating && !isLoading) {
-        fetchOrnaments(true); // true = silent update
+      if (!isUpdating && !isLoading && userIdRef.current) {
+        fetchOrnaments(true);
       }
     }, UPDATE_INTERVAL);
 
     return () => clearInterval(intervalId);
   }, [isUpdating, isLoading]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const user = generateUserId();
-      setUserId(user);
-      //initCommunityTree();
-      fetchOrnaments();
-    }
-  }, []);
+// И проверь generateUserId:
+const generateUserId = (): string => {
+  if (typeof window === 'undefined') return 'anonymous';
+  
+  let userId = localStorage.getItem('communityTreeUserId');
+  if (!userId) {
+    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('communityTreeUserId', userId);
+  }
+  
+  //console.log('Generated/Retrieved userId:', userId);
+  return userId;
+};
 
   const initCommunityTree = () => {
     if (!communityTreeRef.current || !window.Moveable) return;
@@ -180,56 +204,63 @@ export default function TreePage() {
     setMoveableInstance(moveable);
   };
 
-  // Загрузка орнаментов с сервера
-  const fetchOrnaments = async (silent = false) => {
-    try {
-      if (!silent) {
-        setIsLoading(true);
-      } else {
-        setIsUpdating(true);
-      }
-      
-      const response = await fetch(`/api/ornaments?t=${Date.now()}`); // Добавляем timestamp чтобы избежать кэширования
-      const data = await response.json();
-      
-      if (!data.ornaments || !Array.isArray(data.ornaments)) {
-        return;
-      }
-      
-      // Удаляем дубликаты
-      const uniqueOrnaments = removeDuplicateOrnaments(data.ornaments);
-      
-      // Проверяем, изменились ли орнаменты
-      const hasChanges = JSON.stringify(uniqueOrnaments) !== JSON.stringify(ornaments);
-      
-      if (hasChanges && communityTreeRef.current) {
-        // Очищаем только fixed орнаменты (не те, что в процессе редактирования)
-        const existing = communityTreeRef.current.querySelectorAll('.ornament.fixed:not(.editing)');
-        existing.forEach(el => el.remove());
-        
-        // Добавляем новые
-        uniqueOrnaments.forEach(createOrnamentFromData);
-        setOrnaments(uniqueOrnaments);
-        setTotalOrnaments(uniqueOrnaments.length);
-        setLastUpdateTime(Date.now());
-        
-        // Обновляем счетчик орнаментов пользователя
-        const userOrnaments = uniqueOrnaments.filter((o: any) => o.userId === userId);
-        setUserOrnamentCount(userOrnaments.length);
-      }
-    } catch (error) {
-      console.error('Error fetching ornaments:', error);
-      if (!silent) {
-        setError('Failed to load ornaments from server');
-      }
-    } finally {
-      if (!silent) {
-        setIsLoading(false);
-      } else {
-        setIsUpdating(false);
-      }
+// Загрузка орнаментов с сервера
+const fetchOrnaments = async (silent = false) => {
+  try {
+    if (!silent) {
+      setIsLoading(true);
+    } else {
+      setIsUpdating(true);
     }
-  };
+
+    const currentUserId = userIdRef.current;
+    
+    // Получаем орнаменты вместе с количеством для текущего пользователя
+    const response = await fetch(`/api/ornaments?userId=${encodeURIComponent(currentUserId)}&t=${Date.now()}`);
+    const data = await response.json();
+    
+    if (!data.ornaments || !Array.isArray(data.ornaments)) {
+      return;
+    }
+    
+    // Удаляем дубликаты
+    const uniqueOrnaments = removeDuplicateOrnaments(data.ornaments);
+    
+    // Проверяем, изменились ли орнаменты
+    const hasChanges = JSON.stringify(uniqueOrnaments) !== JSON.stringify(ornaments);
+    
+    if (hasChanges && communityTreeRef.current) {
+      // Очищаем только fixed орнаменты
+      const existing = communityTreeRef.current.querySelectorAll('.ornament.fixed:not(.editing)');
+      existing.forEach(el => el.remove());
+      
+      // Добавляем новые
+      uniqueOrnaments.forEach(createOrnamentFromData);
+      setOrnaments(uniqueOrnaments);
+      setTotalOrnaments(uniqueOrnaments.length);
+      setLastUpdateTime(Date.now());
+
+      //console.log("fetch ornament", data.userCount);
+      
+      // Устанавливаем счетчик орнаментов пользователя из ответа сервера
+      setUserOrnamentCount(data.userCount); //из за этого становится 0
+      
+      // Также сохраняем в localStorage для надежности
+      localStorage.setItem(`userOrnamentCount_${currentUserId}`, data.userCount?.toString());
+    }
+  } catch (error) {
+    console.error('Error fetching ornaments:', error);
+    if (!silent) {
+      setError('Failed to load ornaments from server');
+    }
+  } finally {
+    if (!silent) {
+      setIsLoading(false);
+    } else {
+      setIsUpdating(false);
+    }
+  }
+};
 
   // Создание орнамента из данных сервера
   const createOrnamentFromData = (ornamentData: any) => {
@@ -316,10 +347,21 @@ export default function TreePage() {
 
   // Обработчик клика на добавление орнамента
   const handleAddOrnamentClick = () => {
-    if (userOrnamentCount >= MAX_ORNAMENTS_PER_USER) {
-      showErrorMessage(`You already have ${MAX_ORNAMENTS_PER_USER} ornaments. Remove some before adding new ones.`);
+    // Проверяем загружены ли орнаменты
+const currentCount = userOrnamentCountRef.current;
+    //console.log('Current count from ref:', currentCount);
+    if (isLoading) {
+      showErrorMessage("Please wait while ornaments are loading...");
       return;
     }
+    
+    if (userOrnamentCount >= MAX_ORNAMENTS_PER_USER) {
+      showErrorMessage(`You already have ${MAX_ORNAMENTS_PER_USER} ornaments.`);
+      return;
+    }
+    
+    cancelOrnamentPlacement();
+  
     
     const tempInput = document.createElement('input');
     tempInput.type = 'file';
@@ -367,6 +409,9 @@ export default function TreePage() {
     setTimeout(() => {
       document.body.removeChild(tempInput);
     }, 100);
+
+        //console.log(userOrnamentCount);
+
   };
 
 const cancelOrnamentPlacement = () => {
@@ -454,12 +499,11 @@ const createCustomOrnament = (x: number, y: number) => {
   communityTreeRef.current.appendChild(ornament);
   setCurrentCustomOrnament(ornament);
   
-  // Создаем контейнер для кнопок управления ВНУТРИ орнамента
+  // Создаем контейнер для кнопок управления
   const controlsContainer = document.createElement('div');
   controlsContainer.className = 'ornament-controls-container';
   controlsContainer.setAttribute('data-ornament-id', ornamentId);
   
-  // Кнопка сохранения - левый верхний угол
   const saveBtn = document.createElement('button');
   saveBtn.className = 'btn-control btn-save';
   saveBtn.innerHTML = '<i class="fas fa-check">✓</i>';
@@ -473,7 +517,6 @@ const createCustomOrnament = (x: number, y: number) => {
   saveBtn.style.left = '110%';
   saveBtn.style.zIndex = '1001';
   
-  // Кнопка удаления - правый верхний угол (заменяем на левый верхний, но расположим рядом с кнопкой сохранения)
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'btn-control btn-delete';
   deleteBtn.innerHTML = '<i class="fas fa-times">×</i>';
@@ -484,20 +527,12 @@ const createCustomOrnament = (x: number, y: number) => {
   };
   deleteBtn.style.position = 'absolute';
   deleteBtn.style.top = '-14px';
-  deleteBtn.style.left = '-30%'; // Сдвигаем вправо от кнопки сохранения
+  deleteBtn.style.right = '110%' // Сдвигаем влево от кнопки сохранения
   deleteBtn.style.zIndex = '1001';
   
-  // Добавляем кнопки напрямую в контейнер орнамента
   ornament.appendChild(saveBtn);
   ornament.appendChild(deleteBtn);
   
-  // Функция для обновления позиции кнопок (будет вызываться при трансформациях)
-  const updateControlsPosition = () => {
-    // Кнопки уже абсолютно позиционированы относительно орнамента
-    // и будут двигаться вместе с ним автоматически
-  };
-  
-  // Создаем Moveable
   const moveable = new window.Moveable(communityTreeRef.current, {
     target: ornament,
     draggable: true,
@@ -507,7 +542,6 @@ const createCustomOrnament = (x: number, y: number) => {
     renderDirections: ["nw", "ne", "sw", "se"],
   });
 
-  // Обработчики событий Moveable
   const handleDrag = (e: any) => {
     if (e.target === ornament) {
       e.target.style.transform = e.transform;
@@ -532,17 +566,14 @@ const createCustomOrnament = (x: number, y: number) => {
   moveable.on("resize", handleResize);
   moveable.on("rotate", handleRotate);
   
-  // Сохраняем экземпляр
   setMoveableInstance(moveable);
   
-  // Обработчик клика на орнамент для активации Moveable
   ornament.onmousedown = (e) => {
     e.stopPropagation();
     moveable.target = ornament;
   };
 };
 
-  // Функция для дополнительного сжатия base64 изображений
   const compressImageToBase64 = async (base64Image: string, maxWidth: number): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -576,7 +607,6 @@ const createCustomOrnament = (x: number, y: number) => {
     });
   };
 
-  // Сохранение орнамента на сервер
 // Сохранение орнамента на сервер
 const saveOrnament = async (ornament: HTMLElement) => {
     if (!ornament || !userId || !communityTreeRef.current) return;
@@ -638,8 +668,14 @@ const saveOrnament = async (ornament: HTMLElement) => {
         if (data.error) {
             throw new Error(data.error);
         }
+
+        if (data.userCount !== undefined) {
+          setUserOrnamentCount(data.userCount);
+          //console.log(data.userCount); 
+          localStorage.setItem(`userOrnamentCount_${userId}`, data.userCount.toString());
+        }
         
-        // УДАЛЯЕМ ВСЕ ЭЛЕМЕНТЫ MOVEABLE
+        // удаление поля редактирования
         const moveableElements = document.querySelectorAll('.moveable-control, .moveable-line, .moveable-rotation, .moveable-control-box');
         moveableElements.forEach(el => el.remove());
         
@@ -649,14 +685,13 @@ const saveOrnament = async (ornament: HTMLElement) => {
             setMoveableInstance(null);
         }*/
         
-        // Удаляем орнамент
         ornament.remove();
         setCurrentCustomOrnament(null);
         
-        // Обновляем данные
-        await fetchOrnaments();
+        //await fetchOrnaments();
         
-        showSuccessMessage(`✓ Ornament saved! You have ${data.userCount || (userOrnamentCount + 1)}/${MAX_ORNAMENTS_PER_USER} ornaments`);
+        //console.log(`✓ Ornament saved! You have ${data.userCount || (userOrnamentCount + 1)}/${MAX_ORNAMENTS_PER_USER} ornaments`);
+        setUserOrnamentCount(data.userCount);
         
     } catch (error: any) {
         console.error('Error saving ornament:', error);
@@ -733,9 +768,9 @@ const deleteOrnament = async (ornament: HTMLElement) => {
         setCurrentCustomOrnament(null);
         
         // Обновляем список орнаментов
-        await fetchOrnaments();
+        //await fetchOrnaments();
         
-        showSuccessMessage('Ornament deleted');
+        //showSuccessMessage('Ornament deleted');
     } catch (error) {
         console.error('Error deleting ornament:', error);
         showErrorMessage('Failed to delete ornament');
@@ -845,25 +880,26 @@ const deleteOrnament = async (ornament: HTMLElement) => {
             </div>
           )}
           
-          <button 
-            className="btn-add-ornament" 
-            id="addOrnamentBtn" 
-            ref={addOrnamentBtnRef} 
-            onClick={handleAddOrnamentClick}
-            disabled={isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER}
-            style={{
-              opacity: (isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER) ? 0.6 : 1,
-              cursor: (isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER) ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <span>+</span>
-            <span>
-              {userOrnamentCount >= MAX_ORNAMENTS_PER_USER 
-                ? 'Limit Reached (5/5)' 
-                : 'Add Ornament'
-              }
-            </span>
-          </button>
+<button 
+  className="btn-add-ornament" 
+  id="addOrnamentBtn" 
+  ref={addOrnamentBtnRef} 
+  onClick={handleAddOrnamentClick}
+  disabled={isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER}
+  style={{
+    opacity: (isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER) ? 0.6 : 1,
+    cursor: (isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER) ? 'not-allowed' : 'pointer'
+  }}
+>
+  <span>+</span>
+  <span>
+    {isLoading ? 'Loading...' : 
+     userOrnamentCount >= MAX_ORNAMENTS_PER_USER 
+        ? 'Limit Reached (5/5)' 
+        : 'Add Ornament'
+    }
+  </span>
+</button>
           
           <div className="placement-message" id="placementMessage" ref={placementMessageRef} style={{ display: 'none' }}>
             <p>Click anywhere on the community tree to place your ornament</p>
@@ -956,29 +992,30 @@ const deleteOrnament = async (ornament: HTMLElement) => {
             {/*Real-time updates: <strong>Active</strong> (last: {lastUpdateTime ? new Date(lastUpdateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Never'})*/}
           </p>
           
-          <button 
-            onClick={handleAddOrnamentClick}
-            style={{
-              marginTop: '10px',
-              background: 'transparent',
-              border: '2px dashed #c5a47e',
-              color: '#c5a47e',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: userOrnamentCount >= MAX_ORNAMENTS_PER_USER ? 'not-allowed' : 'pointer',
-              opacity: userOrnamentCount >= MAX_ORNAMENTS_PER_USER ? 0.6 : 1,
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              width: '100%'
-            }}
-            disabled={userOrnamentCount >= MAX_ORNAMENTS_PER_USER}
-          >
-            <i className="fas fa-plus"></i>
-            {userOrnamentCount >= MAX_ORNAMENTS_PER_USER ? 'Limit Reached' : 'Add New Ornament'}
-          </button>
+<button 
+  onClick={handleAddOrnamentClick}
+  style={{
+    marginTop: '10px',
+    background: 'transparent',
+    border: '2px dashed #c5a47e',
+    color: '#c5a47e',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    cursor: (isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER) ? 'not-allowed' : 'pointer',
+    opacity: (isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER) ? 0.6 : 1,
+    fontSize: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    width: '100%'
+  }}
+  disabled={isLoading || userOrnamentCount >= MAX_ORNAMENTS_PER_USER}
+>
+  <i className="fas fa-plus"></i>
+  {isLoading ? 'Loading...' : 
+   userOrnamentCount >= MAX_ORNAMENTS_PER_USER ? 'Limit Reached' : 'Add New Ornament'}
+</button>
         </div>
 
         <div className="community-workspace">

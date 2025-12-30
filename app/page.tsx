@@ -18,7 +18,7 @@ declare global {
 }
 
 const myOrnaments = [
-  '/images/toy1.png', '/images/toy2.png', '/images/toy3.png', '/images/toy4.png',
+  '/images/toy1.png', '/images/toy2(old).png', '/images/toy3.png', '/images/toy4.png',
   '/images/toy5.png', '/images/toy6.png', '/images/toy7.png', '/images/toy8.png',
   '/images/toy9.png', '/images/toy10.png', '/images/toy11.png', '/images/toy12.png',
   '/images/toy13.png', 'images/toy14.png', '/images/toy15.png'
