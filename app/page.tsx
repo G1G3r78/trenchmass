@@ -73,7 +73,7 @@ export default function Home() {
     
     inventoryRef.current.innerHTML = '';
     
-    // 15 стандартных предметов
+
     myOrnaments.forEach(src => {
       const slot = document.createElement('div');
       slot.className = 'item-slot';
@@ -82,7 +82,7 @@ export default function Home() {
       inventoryRef.current?.appendChild(slot);
     });
 
-    // 16-й слот для создания своего шарика
+
     const plusSlot = document.createElement('div');
     plusSlot.className = 'item-slot';
     plusSlot.innerHTML = '<span>+</span>';
@@ -204,7 +204,7 @@ export default function Home() {
       
       if (controls) (controls as HTMLElement).style.display = 'block';
     } catch (err) {
-      console.error("Ошибка при создании скриншота:", err);
+      console.error("screenshot error", err);
       if (controls) (controls as HTMLElement).style.display = 'block';
     }
   };
@@ -242,7 +242,7 @@ export default function Home() {
       <Head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Trenchmass</title>
+        <title>Trench year tree</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Rosarivo&display=swap" rel="stylesheet" />
@@ -260,7 +260,7 @@ export default function Home() {
           <div className="logo">
             <a href="/" id="mainBtn" className="logo-link" onClick={goToHome}>
               <i className="fas fa-home"></i>
-              <span>Trenchmass</span>
+              <span>Trench year tree</span>
             </a>
           </div>
           <nav className="nav-menu">
@@ -281,7 +281,7 @@ export default function Home() {
       </header>
       
       <div className="pageone" id="home">
-        <h1 className="header">Trenchmass</h1>
+        <h1 className="header">Trench year tree</h1>
         <h2 className="desc">
           Help us decorate the community tree or jump into the<br/>
           studio to build your personal Christmas tree. Pick your<br/>
@@ -292,10 +292,10 @@ export default function Home() {
       <section className="headerp2"><h1 className="header">Tree galery</h1></section>
       
       <div className="pagetwo">
-        <h2 className="desc2">Merry trenchmass! Create a custom<br/>
+        <h2 className="desc2">Happy trench year! Create a custom<br/>
           tree and share it in X community.<br/>
           And don't forget to participate in<br/>
-          decorating the shared Christmas tree.
+          decorating the community tree.
         </h2>
         <img src="/images/page2.png" className="page2img" />
       </div>
@@ -351,7 +351,7 @@ export default function Home() {
             zIndex: 9999,
             boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
           }}>
-            ✓ Текст скопирован
+            Copied!
           </div>
 
           <div style={{
@@ -398,7 +398,7 @@ export default function Home() {
               }}
             >
               <i className="fas fa-copy"></i>
-              Копировать {<img src='/images/dexscreener.png' style={{width: '28px', height: '28px'}}></img>}
+              Copy ca {<img src='/images/dexscreener.png' style={{width: '28px', height: '28px'}}></img>}
             </button>
 
             <a 
@@ -428,7 +428,7 @@ export default function Home() {
               }}
             >
               <i className="fas fa-external-link-alt"></i>
-              перейт на сайт {<img src='/images/xcom.png' style={{width: '28px', height: '28px'}}></img>}
+              X community {<img src='/images/xcom.png' style={{width: '28px', height: '28px'}}></img>}
             </a>
           </div>
         </div>

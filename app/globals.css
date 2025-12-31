@@ -397,7 +397,7 @@ body {
     background-repeat: no-repeat;
     background-size: contain;
     position: absolute;
-    overflow: visible;
+    overflow: hidden;
     aspect-ratio: 1.5/1.8;
 }
 

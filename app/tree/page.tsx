@@ -240,13 +240,16 @@ const fetchOrnaments = async (silent = false) => {
       setTotalOrnaments(uniqueOrnaments.length);
       setLastUpdateTime(Date.now());
 
-      //console.log("fetch ornament", data.userCount);
-      
-      // Устанавливаем счетчик орнаментов пользователя из ответа сервера
-      setUserOrnamentCount(data.userCount); //из за этого становится 0
-      
-      // Также сохраняем в localStorage для надежности
-      localStorage.setItem(`userOrnamentCount_${currentUserId}`, data.userCount?.toString());
+      const userCount = uniqueOrnaments.filter(
+        o => o.userId === currentUserId
+      ).length;
+
+      setUserOrnamentCount(userCount);
+      userOrnamentCountRef.current = userCount;
+      localStorage.setItem(
+        `userOrnamentCount_${currentUserId}`,
+        userCount.toString()
+      );
     }
   } catch (error) {
     console.error('Error fetching ornaments:', error);
@@ -548,13 +551,18 @@ const createCustomOrnament = (x: number, y: number) => {
     }
   };
 
+  const MAX_SIZE = 150; //максимальный размер на сторону
   const handleResize = (e: any) => {
-    if (e.target === ornament) {
-      e.target.style.width = `${e.width}px`;
-      e.target.style.height = `${e.height}px`;
-      e.target.style.transform = e.transform;
-    }
+    if (e.target !== ornament) return;
+
+    const width = Math.min(e.width, MAX_SIZE);
+    const height = Math.min(e.height, MAX_SIZE);
+
+    ornament.style.width = `${width}px`;
+    ornament.style.height = `${height}px`;
+    ornament.style.transform = e.transform;
   };
+
 
   const handleRotate = (e: any) => {
     if (e.target === ornament) {
@@ -610,14 +618,14 @@ const createCustomOrnament = (x: number, y: number) => {
 // Сохранение орнамента на сервер
 const saveOrnament = async (ornament: HTMLElement) => {
     if (!ornament || !userId || !communityTreeRef.current) return;
+    setIsLoading(true);
     
     // ПРОВЕРКА ЛИМИТА
     if (userOrnamentCount >= MAX_ORNAMENTS_PER_USER) {
-        showErrorMessage(`You already have ${MAX_ORNAMENTS_PER_USER} ornaments. Remove some before adding new ones.`);
+        showErrorMessage(`You already have ${MAX_ORNAMENTS_PER_USER} ornaments.`);
         return;
     }
     
-    setIsLoading(true);
     setError(null);
     
     // Удаляем controlsContainer
@@ -669,10 +677,13 @@ const saveOrnament = async (ornament: HTMLElement) => {
             throw new Error(data.error);
         }
 
-        if (data.userCount !== undefined) {
+        if (typeof data.userCount === 'number') {
           setUserOrnamentCount(data.userCount);
-          //console.log(data.userCount); 
-          localStorage.setItem(`userOrnamentCount_${userId}`, data.userCount.toString());
+          userOrnamentCountRef.current = data.userCount;
+          localStorage.setItem(
+            `userOrnamentCount_${userId}`,
+            data.userCount.toString()
+          );
         }
         
         // удаление поля редактирования
