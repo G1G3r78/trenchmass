@@ -701,7 +701,6 @@ const saveOrnament = async (ornament: HTMLElement) => {
         
         //await fetchOrnaments();
         
-        //console.log(`✓ Ornament saved! You have ${data.userCount || (userOrnamentCount + 1)}/${MAX_ORNAMENTS_PER_USER} ornaments`);
         setUserOrnamentCount(data.userCount);
         
     } catch (error: any) {

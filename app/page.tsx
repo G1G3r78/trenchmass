@@ -260,7 +260,7 @@ export default function Home() {
           <div className="logo">
             <a href="/" id="mainBtn" className="logo-link" onClick={goToHome}>
               <i className="fas fa-home"></i>
-              <span>Trench year tree</span>
+              <span>Happy trench year</span>
             </a>
           </div>
           <nav className="nav-menu">
@@ -284,7 +284,7 @@ export default function Home() {
         <h1 className="header">Trench year tree</h1>
         <h2 className="desc">
           Help us decorate the community tree or jump into the<br/>
-          studio to build your personal Christmas tree. Pick your<br/>
+          studio to build your personal Trench tree. Pick your<br/>
           favorite ornaments, add some lights and share it to our community<br/>
         </h2>
       </div>
@@ -402,7 +402,7 @@ export default function Home() {
             </button>
 
             <a 
-              href="/"
+              href="https://x.com/i/communities/2006381473650110572"
               style={{
                 background: 'rgba(197,164,126,0.85)',
                 border: '2px solid #c5a47e',
