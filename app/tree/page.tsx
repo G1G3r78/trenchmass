@@ -946,7 +946,7 @@ const deleteOrnament = async (ornament: HTMLElement) => {
       <main style={{ padding: '80px 20px', color: '#fafafa', fontFamily: "'Rosarivo', serif" }}>
         <h1 className="header2 center">Community tree</h1>
         <p style={{ textAlign: 'center', fontSize: '20px', marginBottom: '40px', color: '#c5a47e' }}>
-          Add your ornament to our shared Christmas tree! Click the "Add to Tree" button on the right.
+          Add your ornament to our shared Trench tree! Click the "Add to Tree" button on the right.
         </p>
         
         {/* Статусная информация */}
