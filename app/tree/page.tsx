@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
+import Head from 'next/head';
 
 declare global {
   interface Window {
@@ -837,7 +838,7 @@ const deleteOrnament = async (ornament: HTMLElement) => {
           <div className="logo">
             <a href="/" id="mainBtn" className="logo-link" onClick={goToHome}>
               <i className="fas fa-home"></i>
-              <span>Trenchmass</span>
+              <span>Happy trench tree</span>
             </a>
           </div>
           <nav className="nav-menu">
